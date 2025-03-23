@@ -25,18 +25,18 @@ const toolNode = new ToolNode(tools);
 const app = express();
 const port = process.env.PORT || 5000;
 
+// ✅ Step 1: Allowed origins
 const allowedOrigins = [
   "http://localhost:3000",
   "https://rule-engine-ui-jet.vercel.app",
 ];
 
-// ✅ Use dynamic origin check in cors middleware
-// ✅ Enable CORS for all requests
+// ✅ Step 2: CORS middleware
 app.use(
   cors({
-    origin: (origin, callback) => {
+    origin: function (origin, callback) {
       if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true); // Allow the request
+        callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
       }
@@ -47,16 +47,26 @@ app.use(
   })
 );
 
-// ✅ Also manually set headers (optional but sometimes needed for OPTIONS requests)
+// ✅ Step 3: Manually set headers (especially for OPTIONS preflight)
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   if (allowedOrigins.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.header("Access-Control-Allow-Origin", origin);
+    res.header("Access-Control-Allow-Headers", "Content-Type");
+    res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.header("Access-Control-Allow-Credentials", "true");
   }
-  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type");
+
+  // Handle OPTIONS request quickly
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+
   next();
 });
+
+// ✅ JSON middleware
+app.use(express.json());
 
 // ✅ JSON Middleware
 app.use(express.json());
