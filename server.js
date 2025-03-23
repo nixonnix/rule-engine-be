@@ -25,20 +25,36 @@ const toolNode = new ToolNode(tools);
 const app = express();
 const port = process.env.PORT || 5000;
 
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://rule-engine-ui-jet.vercel.app",
+];
+
+// ✅ Use dynamic origin check in cors middleware
 // ✅ Enable CORS for all requests
 app.use(
   cors({
-    origin: "http://localhost:3000", // Allow frontend
-    methods: ["GET", "POST", "OPTIONS"], // Allow these HTTP methods
-    allowedHeaders: ["Content-Type"], // Allow these headers
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true); // Allow the request
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type"],
+    credentials: true,
   })
 );
 
-// ✅ Manually Set Headers for All Requests
+// ✅ Also manually set headers (optional but sometimes needed for OPTIONS requests)
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "http://localhost:3000"); // ✅ Allow frontend origin
-  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS"); // ✅ Allow GET, POST, OPTIONS
-  res.header("Access-Control-Allow-Headers", "Content-Type"); // ✅ Allow Content-Type header
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type");
   next();
 });
 
